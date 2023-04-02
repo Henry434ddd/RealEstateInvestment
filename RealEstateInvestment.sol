@@ -8,11 +8,17 @@ mapping(address => uint) public ownershipMap;
 address [] private shareholders;
 mapping(address => uint) public readyToSellShareMap;
 address []  private currentSellers;
+uint public currAssetPrice ;
 
 constructor() {
     owner = payable(msg.sender);
     ownershipMap[owner] = 100;
     shareholders.push(owner);
+}
+
+function setCurrAssetPrice(uint price) public {
+    require(msg.sender == owner, "only owner can change the price");
+    currAssetPrice = price;
 }
 
 function getCurrentSellers() public view returns (address[] memory){
@@ -33,7 +39,7 @@ function SellShares(uint  percentage) public  {
 
         address sender = msg.sender;
         uint sellerCurrOwnership = ownershipMap[sender];
-        require(sellerCurrOwnership >= percentage,"You don't have enough of money");
+        require(sellerCurrOwnership >= percentage,"You don't have enough of shares to sell");
 
         //mapping api reference https://solidity-by-example.org/mapping/#:~:text=Maps%20are%20created%20with%20the,Mappings%20are%20not%20iterable.
         
@@ -48,7 +54,6 @@ function SellShares(uint  percentage) public  {
             readyToSellShareMap[sender] = percentage;
         }
         totalReadyToSellShare = totalReadyToSellShare + percentage;
-        ownershipMap[sender] = sellerCurrOwnership - percentage;
         
 }
 
@@ -89,11 +94,17 @@ function removeCurrSeller(address seller) private {
 }
 
         
+event print(uint number);
+
 
 
 function buyShares(address payable seller, uint  percentage) public payable{
     address buyer = msg.sender;
+    address _seller = seller;
     uint money = msg.value;
+  
+    require(money >= checkShareToPrice(percentage) * (1 ether), "please sending enough of ether");
+  
     require(checkSellerExist(seller));
     
     //get the number of percentage the seller want to sell
@@ -103,9 +114,7 @@ function buyShares(address payable seller, uint  percentage) public payable{
     require(sellerAvailShare >= percentage, "not enough to sell"); 
     //ownership transfer
         //seller receive money
-        require(money == percentage * (1 ether) ,"please sending enough of ether");
         seller.transfer(msg.value);
-
         uint updateShareNum = sellerAvailShare - percentage;
         
         //update currentSellers array if he sell all of his percentage
@@ -113,11 +122,14 @@ function buyShares(address payable seller, uint  percentage) public payable{
             removeCurrSeller(seller);
         }
         //update readyToSellShareMap
-        readyToSellShareMap[seller] = updateShareNum;
+        readyToSellShareMap[_seller] = updateShareNum;
+
+        //update seller's ownership
+        ownershipMap[_seller] = ownershipMap[_seller] - percentage;
+        emit print(ownershipMap[_seller]);
+
         //update total ready to sell
         totalReadyToSellShare = totalReadyToSellShare - percentage;
-
-      
 
         //update buyer's ownership
         uint currOwnershipNum = ownershipMap[buyer];
@@ -133,6 +145,27 @@ function buyShares(address payable seller, uint  percentage) public payable{
             shareholders.push(buyer);
         }
 
+    }
+
+
+function checkShareToPrice(uint  percentage) public view returns(uint){
+
+    return currAssetPrice * percentage / 100;
+
+}
+
+
+function transferOwnership(address payable newOwner, uint day) public{
+
+    require(msg.sender == owner, "only owner can change the ownership");
+    require(totalReadyToSellShare == 0, "new owner need to buy out all ready to sell shares");
+
+    owner = newOwner;
+
+}
+
+
+
 
 }
 
@@ -146,4 +179,3 @@ function buyShares(address payable seller, uint  percentage) public payable{
 
 
 
-}
