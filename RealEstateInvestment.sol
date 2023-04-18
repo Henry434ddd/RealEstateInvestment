@@ -8,6 +8,7 @@ contract RealEstateInvestment {
     mapping(address => uint256) public readyToSellShareMap;
     address[] private currentSellers;
     uint256 public currAssetPrice;
+    
 
     constructor() {
         owner = payable(msg.sender);
@@ -164,6 +165,24 @@ contract RealEstateInvestment {
         Tenant memory tenant = Tenant(_tenant, monthlyPayment, 0, 0);
         tenantList.push(tenant);
     }
+
+    //remove tenant 
+    function removeTenant(address _tenant) public {
+        require(msg.sender == owner, "Only owner can remove the tenant");
+        require(tenantList.length > 0, "There is no tenants");
+        int256 telantPosition = -1;
+        for (uint256 i = 0; i < tenantList.length; i++) {
+            if (tenantList[i].tenantAdd == _tenant) {
+                telantPosition = int256(i);
+            }
+        }
+        require(telantPosition != -1, "cannot find the tenant");
+        tenantList[uint256(telantPosition)] = tenantList[uint256(tenantList.length) - 1];
+        tenantList.pop();
+    }
+
+    
+
 
     // API for crun job to update late fee to each tenant daily
     function updateLateFeeDaily() public {
