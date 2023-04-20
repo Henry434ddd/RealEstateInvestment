@@ -181,7 +181,19 @@ contract RealEstateInvestment {
         tenantList.pop();
     }
 
-    
+    //change tenant rent payment price
+     function changeTenantRent(address _tenant, uint price) public {
+        require(msg.sender == owner, "Only owner can change the tenant rent price");
+        require(tenantList.length > 0, "There is no tenants");
+        int256 telantPosition = -1;
+        for (uint256 i = 0; i < tenantList.length; i++) {
+            if (tenantList[i].tenantAdd == _tenant) {
+                telantPosition = int256(i);
+            }
+        }
+        require(telantPosition != -1, "cannot find the tenant");
+        tenantList[uint256(telantPosition)].monthlyPayment = price;
+    }
 
 
     // API for crun job to update late fee to each tenant daily
